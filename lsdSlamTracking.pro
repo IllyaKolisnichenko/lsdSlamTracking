@@ -14,6 +14,10 @@ TEMPLATE    = lib
 
 DEFINES     += LSDSLAMTRACKING_LIBRARY
 
+#QMAKE_CFLAGS_DEBUG    += -pg
+#QMAKE_CXXFLAGS_DEBUG  += -pg
+#QMAKE_LFLAGS_DEBUG    += -pg
+
 SOURCES += \
             Tracking/Relocalizer.cpp        \
             Tracking/SE3Tracker.cpp         \
@@ -28,31 +32,29 @@ HEADERS +=  \
             Tracking/TrackingReference.h
 
 unix {
-    INCLUDEPATH += /home/sergey/MyProject/MySlamProject/Qt/
-    INCLUDEPATH += /home/sergey/libs/Sophus
+#    INCLUDEPATH += /home/sergey/MyProject/MySlamProject/Qt/
+#    INCLUDEPATH += /home/sergey/libs/Sophus
 
-    INCLUDEPATH +=  /home/sergey/MyProject/MySlamProject/Qt/lsdSlamIO/
-    LIBS        +=  -L/home/sergey/MyProject/MySlamProject/Qt/FullProject/build/lsdSlamIO     \
-                    -llsdSlamIO
+    INCLUDEPATH +=  ../lsdSlamIO/
+#    LIBS        +=  -L$$PWD/../build/lsdSlamIO     \
+#                    -llsdSlamIO
 
-    INCLUDEPATH += /home/sergey/MyProject/MySlamProject/Qt/lsdSlamFrame/
-    LIBS        +=  -L/home/sergey/MyProject/MySlamProject/Qt/FullProject/build/lsdSlamFrame  \
-                    -llsdSlamFrame
+    INCLUDEPATH +=  ../lsdSlamFrame/
+#    LIBS        +=  -L$$PWD/../build/lsdSlamFrame  \
+#                    -llsdSlamFrame
 
-    INCLUDEPATH +=  /home/sergey/MyProject/MySlamProject/Qt/lsdSlamUtil/
-    LIBS        +=  -L/home/sergey/MyProject/MySlamProject/Qt/FullProject/build/lsdSlamUtil    \
-                    -llsdSlamUtil
+    INCLUDEPATH +=  ../lsdSlamUtil/
+#    LIBS        +=  -L$$PWD/../build/lsdSlamUtil    \
+#                    -llsdSlamUtil
 
-    INCLUDEPATH += /home/sergey/MyProject/MySlamProject/Qt/lsdSlamGlobalMapping/
-    LIBS        +=  -L/home/sergey/MyProject/MySlamProject/Qt/FullProject/build/lsdSlamGlobalMapping  \
-                    -llsdSlamGlobalMapping
+    INCLUDEPATH +=  ../lsdSlamGlobalMapping/
+#    LIBS        +=  -L$$PWD/../build/lsdSlamGlobalMapping  \
+#                    -llsdSlamGlobalMapping
 
     # Boost
-    LIBS    +=  -L/home/sergey/libs/boost_1_59_0/stage/lib      \
-                -lboost_thread                                  \
-                -lboost_system
+    LIBS    +=  -lboost_thread  -lboost_system
 
     #target.path = /usr/lib
-    target.path = /home/sergey/MyProject/MySlamProject/lsdSlamSharedLibs
+    target.path = $$PWD/../build/lsdSlamApp
     INSTALLS += target
 }
