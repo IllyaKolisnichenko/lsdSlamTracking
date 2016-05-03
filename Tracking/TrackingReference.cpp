@@ -33,6 +33,7 @@ namespace lsd_slam
 {
 
 
+// Just reset all the pointers
 TrackingReference::TrackingReference()
 {
     frameID         = -1;
@@ -95,10 +96,12 @@ void TrackingReference::importFrame( Frame* sourceKF )
 	// reset allocation if dimensions differ (shouldnt happen usually)
 	if(sourceKF->width(0) * sourceKF->height(0) != wh_allocated)
 	{
+        // Clear pointers to all arrays
 		releaseAll();
 		wh_allocated = sourceKF->width(0) * sourceKF->height(0);
 	}
 
+    // Clear some counter
 	clearAll();
 
 	lock.unlock();
@@ -106,6 +109,7 @@ void TrackingReference::importFrame( Frame* sourceKF )
 
 void TrackingReference::invalidate()
 {
+    // This data is always repeated
 	if(keyframe != 0)
 		keyframeLock.unlock();
 
@@ -123,6 +127,7 @@ void TrackingReference::makePointCloud(int level)
 	if(numData[level] > 0)
 		return;	// already exists.
 
+    // Assignment of data of appropriate level
 	int w = keyframe->width(level);
     int h = keyframe->height(level);
 
@@ -137,6 +142,7 @@ void TrackingReference::makePointCloud(int level)
 
     const Eigen::Vector4f*  pyrGradSource       = keyframe->gradients   (level);
 
+    // Class variables
     if(posData[level] == nullptr)
         posData[level] = new Eigen::Vector3f[w*h];
 
@@ -157,7 +163,9 @@ void TrackingReference::makePointCloud(int level)
     // For all pixels of image
 	for(int x=1; x<w-1; x++)
 		for(int y=1; y<h-1; y++)
+        // Start of counting Point Cloud
 		{
+            // Counting an index of a point
 			int idx = x + y*w;
 
             if( pyrIdepthVarSource[idx] <= 0 || pyrIdepthSource[idx] == 0 )
@@ -177,7 +185,7 @@ void TrackingReference::makePointCloud(int level)
 			gradDataPT++;
 			colorAndVarDataPT++;
 			idxPT++;
-		}
+        } // End of counting Point Cloud
 
 	numData[level] = posDataPT - posData[level];
 }

@@ -118,7 +118,7 @@ SE3Tracker::~SE3Tracker()
 
 
 
-// tracks a frame.
+// Tracks a frame.
 // first_frame has depth, second_frame DOES NOT have depth.
 float SE3Tracker::checkPermaRefOverlap(
 		Frame* reference,
@@ -159,7 +159,7 @@ float SE3Tracker::checkPermaRefOverlap(
 }
 
 
-// tracks a frame.
+// Tracks a frame.
 // first_frame has depth, second_frame DOES NOT have depth.
 SE3 SE3Tracker::trackFrameOnPermaref(
 		Frame* reference,
@@ -203,17 +203,17 @@ SE3 SE3Tracker::trackFrameOnPermaref(
 		int incTry=0;
 		while(true)
 		{
-			// solve LS system with current lambda
+			// Solve LS system with current lambda
 			Vector6 b = -ls.b;
 			Matrix6x6 A = ls.A;
 			for(int i=0;i<6;i++) A(i,i) *= 1+LM_lambda;
 			Vector6 inc = A.ldlt().solve(b);
 			incTry++;
 
-			// apply increment. pretty sure this way round is correct, but hard to test.
+			// Apply increment. Pretty sure this way round is correct, but hard to test.
 			Sophus::SE3f new_referenceToFrame = Sophus::SE3f::exp((inc)) * referenceToFrame;
 
-			// re-evaluate residual
+			// Re-evaluate residual
 			callOptimized(calcResidualAndBuffers, (reference->permaRef_posData, reference->permaRef_colorAndVarData, 0, reference->permaRefNumPts, frame, new_referenceToFrame, QUICK_KF_CHECK_LVL, false));
 			if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * (width>>QUICK_KF_CHECK_LVL)*(height>>QUICK_KF_CHECK_LVL))
 			{
@@ -224,17 +224,17 @@ SE3 SE3Tracker::trackFrameOnPermaref(
 			float error = callOptimized(calcWeightsAndResidual,(new_referenceToFrame));
 
 
-			// accept inc?
+			// Accept inc ?
 			if(error < lastErr)
 			{
-				// accept inc
+				// Accept inc
 				referenceToFrame = new_referenceToFrame;
 				if(useAffineLightningEstimation)
 				{
 					affineEstimation_a = affineEstimation_a_lastIt;
 					affineEstimation_b = affineEstimation_b_lastIt;
 				}
-				// converged?
+				// Converged ?
 				if(error / lastErr > settings.convergenceEpsTestTrack)
 					iteration = settings.maxItsTestTrack;
 
@@ -274,10 +274,11 @@ SE3 SE3Tracker::trackFrameOnPermaref(
 	return toSophus(referenceToFrame);
 }
 
-// tracks a frame.
+// Tracks a frame.
 // first_frame has depth, second_frame DOES NOT have depth.
 SE3 SE3Tracker::trackFrame(	TrackingReference*  reference,
                             Frame*              frame,
+                            // Initial condition
                             const SE3&          frameToReference_initialEstimate    )
 {
 
@@ -295,8 +296,10 @@ SE3 SE3Tracker::trackFrame(	TrackingReference*  reference,
         saveAllTrackingStagesInternal   = true;
 	}
 	
+    // Output of some debugging image
     if ( plotTrackingIterationInfo )
 	{
+        // Constructing of embedded images
 		const float* frameImage = frame->image();
 
         for ( int row = 0; row < height; ++ row )
@@ -309,22 +312,27 @@ SE3 SE3Tracker::trackFrame(	TrackingReference*  reference,
                                     1       );
 	}
 
-	// ============ track frame ============
+	// ============ Track a frame ============
     Sophus::SE3f    referenceToFrame = frameToReference_initialEstimate.inverse().cast<float>();
     LGS6            ls;
 
+    // Counters of calling appropriate functions on different levels
     int numCalcResidualCalls    [PYRAMID_LEVELS];
     int numCalcWarpUpdateCalls  [PYRAMID_LEVELS];
 
+
+    // For each level
 	float last_residual = 0;
 
     for( int lvl = SE3TRACKING_MAX_LEVEL-1; lvl >= SE3TRACKING_MIN_LEVEL; lvl-- )
 	{
+        // Null before start
         numCalcResidualCalls    [lvl] = 0;
         numCalcWarpUpdateCalls  [lvl] = 0;
 
 		reference->makePointCloud(lvl);
 
+        // Creating of all buffers
         callOptimized(  calcResidualAndBuffers, (reference->posData[lvl],
                                                  reference->colorAndVarData[lvl],
                                                  SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0,
@@ -334,6 +342,7 @@ SE3 SE3Tracker::trackFrame(	TrackingReference*  reference,
                                                  lvl,
                                                  (plotTracking && lvl == SE3TRACKING_MIN_LEVEL) ));
 
+        // Received offset "bigger" than given number of pixels considering the level of embedding
         if( buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * ( width >> lvl ) * ( height >> lvl ) )
 		{
             diverged        = true;
@@ -342,6 +351,7 @@ SE3 SE3Tracker::trackFrame(	TrackingReference*  reference,
 			return SE3();
 		}
 
+        // ------------------------------------------------------- out of sync !!!
         if( useAffineLightningEstimation )
 		{
 			affineEstimation_a = affineEstimation_a_lastIt;
@@ -354,6 +364,7 @@ SE3 SE3Tracker::trackFrame(	TrackingReference*  reference,
 
 		float LM_lambda = settings.lambdaInitial[lvl];
 
+        // Limit maximum amount of iterations for level
 		for(int iteration=0; iteration < settings.maxItsPerLvl[lvl]; iteration++)
 		{
 
@@ -365,25 +376,30 @@ SE3 SE3Tracker::trackFrame(	TrackingReference*  reference,
 
             int incTry = 0;
 
+            // Endless loop of optimization
             while( true )
 			{
-				// solve LS system with current lambda
+				// Solve LS system with current lambda
+                // Declared in LGSX.h (eigen)
                 Vector6     b = -ls.b;
                 Matrix6x6   A =  ls.A;
 
+                // Diagonal diverges position on a given LAMBDA
                 for( int i = 0; i < 6 ; i++ )
                     A(i,i) *= 1 + LM_lambda;
 
 				Vector6 inc = A.ldlt().solve(b);
+                // Increment the counter of trials
 				incTry++;
 
-				// apply increment. pretty sure this way round is correct, but hard to test.
+				// Apply increment. Pretty sure this way round is correct, but hard to test.
 				Sophus::SE3f new_referenceToFrame = Sophus::SE3f::exp((inc)) * referenceToFrame;
 				//Sophus::SE3f new_referenceToFrame = referenceToFrame * Sophus::SE3f::exp((inc));
 
-				// re-evaluate residual
+				// Re-evaluate residual
 				callOptimized(calcResidualAndBuffers, (reference->posData[lvl], reference->colorAndVarData[lvl], SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, reference->numData[lvl], frame, new_referenceToFrame, lvl, (plotTracking && lvl == SE3TRACKING_MIN_LEVEL)));
 				if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN* (width>>lvl)*(height>>lvl))
+                // Again out of sync
 				{
 					diverged = true;
 					trackingWasGood = false;
@@ -394,10 +410,12 @@ SE3 SE3Tracker::trackFrame(	TrackingReference*  reference,
 				numCalcResidualCalls[lvl]++;
 
 
-				// accept inc?
+				// Accept inc ?
+                // Convergence analysis
 				if(error < lastErr)
 				{
-					// accept inc
+					// Accept inc
+                    // If result is better
 					referenceToFrame = new_referenceToFrame;
 					if(useAffineLightningEstimation)
 					{
@@ -407,7 +425,7 @@ SE3 SE3Tracker::trackFrame(	TrackingReference*  reference,
 
 					if(enablePrintDebugInfo && printTrackingIterationInfo)
 					{
-						// debug output
+						// Debug output
 						printf("(%d-%d): ACCEPTED increment of %f with lambda %.1f, residual: %f -> %f\n",
 								lvl,iteration, sqrt(inc.dot(inc)), LM_lambda, lastErr, error);
 
@@ -416,7 +434,7 @@ SE3 SE3Tracker::trackFrame(	TrackingReference*  reference,
 								referenceToFrame.log()[3],referenceToFrame.log()[4],referenceToFrame.log()[5]);
 					}
 
-					// converged?
+                    // Converged ?
 					if(error / lastErr > settings.convergenceEps[lvl])
 					{
 						if(enablePrintDebugInfo && printTrackingIterationInfo)
@@ -437,6 +455,7 @@ SE3 SE3Tracker::trackFrame(	TrackingReference*  reference,
 
 					break;
 				}
+                // If became worse
 				else
 				{
 					if(enablePrintDebugInfo && printTrackingIterationInfo)
@@ -460,10 +479,10 @@ SE3 SE3Tracker::trackFrame(	TrackingReference*  reference,
 						LM_lambda = 0.2;
 					else
 						LM_lambda *= std::pow(settings.lambdaFailFac, incTry);
-				}
-			}
-		}
-	}
+                }   // while (true)
+            }       // while (true)
+        }   // "for" if all the iterations on this level are done
+    }   // "for" if all the levels SE3Tracking are processed
 
 
 	if(plotTracking)
@@ -589,7 +608,7 @@ float SE3Tracker::calcWeightsAndResidualSSE(
 
 	return sumRes / ((buf_warped_size >> 2)<<2);
 }
-#endif
+#endif // CalcWeightAndResidual NEON
 
 
 
@@ -760,8 +779,9 @@ float SE3Tracker::calcWeightsAndResidualNEON(
 
 	return sumRes / buf_warped_size;
 }
-#endif
+#endif // calcWeightAndResudual
 
+// !!! Not optimized
 float SE3Tracker::calcWeightsAndResidual(
 		const Sophus::SE3f& referenceToFrame)
 {
@@ -805,7 +825,7 @@ float SE3Tracker::calcWeightsAndResidual(
 	return sumRes / buf_warped_size;
 }
 
-
+// ------------------------------------ DEBUG START --------------------------------
 void SE3Tracker::calcResidualAndBuffers_debugStart()
 {
 	if(plotTrackingIterationInfo || saveAllTrackingStagesInternal)
@@ -818,6 +838,7 @@ void SE3Tracker::calcResidualAndBuffers_debugStart()
         fillCvMat(&debugImageOldImageWarped,    cv::Vec3b(other,other,255)  );
 	}
 }
+// ------------------------------------ DEBUG FINISH ------------------------------
 
 void SE3Tracker::calcResidualAndBuffers_debugFinish(int w)
 {
@@ -903,7 +924,7 @@ float SE3Tracker::calcResidualAndBuffersNEON(
 }
 #endif
 
-
+// This function isn't optimized at all !!!
 float SE3Tracker::calcResidualAndBuffers(   const Eigen::Vector3f*  refPoint,
                                             const Eigen::Vector2f*  refColVar,
                                             int*                    idxBuf,
@@ -915,10 +936,11 @@ float SE3Tracker::calcResidualAndBuffers(   const Eigen::Vector3f*  refPoint,
 {
 	calcResidualAndBuffers_debugStart();
 
+    // Depends on some conditions (done not for all levels)
 	if(plotResidual)
 		debugImageResiduals.setTo(0);
 
-
+    // Read parameters of cameras
     int w = frame->width (level);
 	int h = frame->height(level);
 
@@ -929,11 +951,13 @@ float SE3Tracker::calcResidualAndBuffers(   const Eigen::Vector3f*  refPoint,
 	float cx_l = KLvl(0,2);
 	float cy_l = KLvl(1,2);
 
+    // Input data
     Eigen::Matrix3f rotMat      = referenceToFrame.rotationMatrix();
     Eigen::Vector3f transVec    = referenceToFrame.translation();
 	
 	const Eigen::Vector3f* refPoint_max = refPoint + refNum;
 
+    // Pointer to the buffer
 	const Eigen::Vector4f* frame_gradients = frame->gradients(level);
 
 	int idx=0;
@@ -954,15 +978,20 @@ float SE3Tracker::calcResidualAndBuffers(   const Eigen::Vector3f*  refPoint,
             sw  = 0;
 
 	float usageCount = 0;
+    // -------------------- end of initialization
 
-	for(;refPoint<refPoint_max; refPoint++, refColVar++, idxBuf++)
+    for(;   refPoint<refPoint_max;  // For all points
+            refPoint++  ,           // Next point
+            refColVar++ ,           // Next element of input vector
+            idxBuf++)
 	{
+        // Rotation and transfer
 		Eigen::Vector3f Wxp = rotMat * (*refPoint) + transVec;
 
 		float u_new = (Wxp[0]/Wxp[2])*fx_l + cx_l;
 		float v_new = (Wxp[1]/Wxp[2])*fy_l + cy_l;
 
-		// step 1a: coordinates have to be in image:
+		// Step 1a: coordinates have to be in the image:
 		// (inverse test to exclude NANs)
 		if(!(u_new > 1 && v_new > 1 && u_new < w-2 && v_new < h-2))
 		{
@@ -971,6 +1000,7 @@ float SE3Tracker::calcResidualAndBuffers(   const Eigen::Vector3f*  refPoint,
 			continue;
 		}
 
+        // Calculate the average vector for the calculated point
         Eigen::Vector3f resInterp = getInterpolatedElement43( frame_gradients,
                                                               u_new,
                                                               v_new,
@@ -1023,15 +1053,15 @@ float SE3Tracker::calcResidualAndBuffers(   const Eigen::Vector3f*  refPoint,
 		else
 			badCount++;
 
-        // if depth becomes larger: pixel becomes "smaller", hence count it less.
+        // If depth becomes larger: pixel becomes "smaller", hence count it less.
         float depthChange = (*refPoint)[2] / Wxp[2];
 		usageCount += depthChange < 1 ? depthChange : 1;
 
 		// DEBUG STUFF
 		if(plotTrackingIterationInfo || plotResidual)
 		{
-			// for debug plot only: find x,y again.
-			// horribly inefficient, but who cares at this point...
+			// For debug plot only: find x,y again.
+			// Horribly inefficient, but who cares at this point...
 			Eigen::Vector3f point = KLvl * (*refPoint);
 			int x = point[0] / point[2] + 0.5f;
 			int y = point[1] / point[2] + 0.5f;
@@ -1078,21 +1108,21 @@ void SE3Tracker::calculateWarpUpdateSSE(
 		__m128 val1, val2, val3, val4;
 		__m128 J61, J62, J63, J64, J65, J66;
 
-		// redefine pz
+		// Redefine pz
 		__m128 pz = _mm_load_ps(buf_warped_z+i);
 		pz = _mm_rcp_ps(pz);						// pz := 1/z
 
 
 		__m128 gx = _mm_load_ps(buf_warped_dx+i);
 		val1 = _mm_mul_ps(pz, gx);			// gx / z => SET [0]
-		//v[0] = z*gx;
+		// v[0] = z*gx;
 		J61 = val1;
 
 
 
 		__m128 gy = _mm_load_ps(buf_warped_dy+i);
 		val1 = _mm_mul_ps(pz, gy);					// gy / z => SET [1]
-		//v[1] = z*gy;
+		// v[1] = z*gy;
 		J62 = val1;
 
 
@@ -1103,14 +1133,14 @@ void SE3Tracker::calculateWarpUpdateSSE(
 		val2 = _mm_mul_ps(py, gx);
 		val2 = _mm_mul_ps(val2, pz);	//  py * gx * z
 		val1 = _mm_sub_ps(val1, val2);  // px * gy * z - py * gx * z => SET [5]
-		//v[5] = -py * z * gx +  px * z * gy;
+		// v[5] = -py * z * gx +  px * z * gy;
 		J66 = val1;
 
 
-		// redefine pz
+		// Redefine pz
 		pz = _mm_mul_ps(pz,pz); 		// pz := 1/(z*z)
 
-		// will use these for the following calculations a lot.
+		// Will use these for the following calculations a lot.
 		val1 = _mm_mul_ps(px, gx);
 		val1 = _mm_mul_ps(val1, pz);		// px * z_sqr * gx
 		val2 = _mm_mul_ps(py, gy);
@@ -1160,7 +1190,7 @@ void SE3Tracker::calculateWarpUpdateSSE(
 
 	}
 
-	// solve ls
+	// Solve ls
 	ls.finish();
 
 }
@@ -1260,7 +1290,7 @@ void SE3Tracker::calculateWarpUpdateNEON(
 		);
 		
 
-		// step 6: integrate into A and b:
+		// Step 6: integrate into A and b:
 		if(!(i+3>=buf_warped_size))
 		{
 			ls.update(v1, *(buf_warped_residual+i+0), *(buf_weight_p+i+0));
@@ -1283,14 +1313,14 @@ void SE3Tracker::calculateWarpUpdateNEON(
 		}
 	}
 
-	// solve ls
+	// Solve ls
 	ls.finish();
 	//ls.solve(result);
 
 }
 #endif
 
-
+// !!! Not optimized
 void SE3Tracker::calculateWarpUpdate(
 		LGS6 &ls)
 {
