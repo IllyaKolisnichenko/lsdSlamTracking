@@ -39,11 +39,17 @@ class Sim3Tracker;
 class Relocalizer
 {
 public:
-    // Конструктор / Диструктор
+    // Constructor / Destructor
     Relocalizer ( int w, int h, Eigen::Matrix3f K );
 	~Relocalizer();
 
-    // Обновляет текущий фрейм
+    /**
+     * @brief updateCurrentFrame
+     *
+     * Update the current frame
+     *
+     * @param currentFrame
+     */
     void updateCurrentFrame( std::shared_ptr<Frame> currentFrame );
 
     void start  ( std::vector<Frame*, Eigen::aligned_allocator<lsd_slam::Frame*> > &allKeyframesList );
@@ -56,18 +62,20 @@ public:
                       int                       &out_successfulFrameID  ,
                       SE3                       &out_frameToKeyframe        );
 
-    // Флаг запуска реалокатора
+    /// Flag of starting relocator
 	bool isRunning;
 
 private:
-    // Размеры изображения
+    // The size of image
 	int w, h;
-    // Какаято матрица ( возможно, параметры камеры )
+
+    // Probably camera's parameters
     Eigen::Matrix3f K;
 
-    // Массив потоков релокализации
+    // Array of relocators threads
     boost::thread   relocThreads[RELOCALIZE_THREADS];
-    // Массив флагов запущенных потоков
+
+    // Array of flags of running threads
     bool            running     [RELOCALIZE_THREADS];
 
 	// locking & signalling structures

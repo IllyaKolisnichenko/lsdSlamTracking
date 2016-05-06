@@ -33,6 +33,7 @@ namespace lsd_slam
 class TrackingReference;
 class Frame;
 
+/** A class. SE3Tracker */
 class SE3Tracker
 {
 public:
@@ -40,20 +41,25 @@ public:
 
 	int width, height;
 
-	// camera matrix
-	Eigen::Matrix3f K, KInv;
+    /// Camera matrix
+    Eigen::Matrix3f K   ,
+                    KInv;
 
     float fx,   fy,  cx,  cy;
     float fxi,  fyi, cxi, cyi;
 
 	DenseDepthTrackerSettings settings;
 
-	// debug images
+    /**
+     * @name Debug images
+     */
+    ///@{
 	cv::Mat debugImageResiduals;
 	cv::Mat debugImageWeights;
 	cv::Mat debugImageSecondFrame;
 	cv::Mat debugImageOldImageSource;
 	cv::Mat debugImageOldImageWarped;
+    ///@}
 
 	SE3Tracker(int w, int h, Eigen::Matrix3f K);
 	SE3Tracker(const SE3Tracker&) = delete;
@@ -88,8 +94,6 @@ public:
 	bool diverged;
 	bool trackingWasGood;
 private:
-
-
 
 	float* buf_warped_residual;
 	float* buf_warped_dx;
@@ -174,7 +178,7 @@ private:
 	void calcResidualAndBuffers_debugFinish(int w);
 
 
-	// used for image saving
+    /// Used for image saving
 	int iterationNumber;
 
 

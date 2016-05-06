@@ -93,7 +93,7 @@ void TrackingReference::importFrame( Frame* sourceKF )
     keyframe        = sourceKF;
     frameID         = keyframe->id();
 
-	// reset allocation if dimensions differ (shouldnt happen usually)
+    // Reset allocation if dimensions differ (shouldnt happen usually)
 	if(sourceKF->width(0) * sourceKF->height(0) != wh_allocated)
 	{
         // Clear pointers to all arrays

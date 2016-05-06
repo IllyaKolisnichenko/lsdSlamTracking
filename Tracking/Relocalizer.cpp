@@ -58,30 +58,34 @@ Relocalizer::~Relocalizer()
 
 void Relocalizer::stop()
 {
-    // Отметить установку ( А ЕСЛИ ЕЩЕ НЕ ЗАПУЩЕН ??? )
+    // Cancel the set up
 	continueRunning = false;
 
-    // Заблокировать поток
+    // Lock the thread
 	exMutex.lock();
-    // Сообщить всем ожидающим потокам ( о чем ??? )
+
+    // Notify all threads that are waiting
 	newCurrentFrameSignal.notify_all();
-    // Разблокировать поток
+
+    // Unlock the thread
 	exMutex.unlock();
 
-    // Для всех потоков
+    // For all the threads
     for(int i=0; i < RELOCALIZE_THREADS; i++)
 	{
-        // Завершить поток
+        // Finish the thread
 		relocThreads[i].join();
-        // Сбросить соответствующий флаг
+
 		running[i] = false;
 	}
-    // Отметить остановку
+
+    // Mark the "stop"
 	isRunning = false;
 
-    // Почистить вектор
+    // Clear the vector
 	KFForReloc.clear();
-    // Сбросить текущий кадр
+
+    // Reset the current frame
 	CurrentRelocFrame.reset();
 }
 
@@ -111,15 +115,15 @@ void Relocalizer::updateCurrentFrame(std::shared_ptr<Frame> currentFrame)
 
 void Relocalizer::start(std::vector<Frame*, Eigen::aligned_allocator<lsd_slam::Frame*> > &allKeyframesList)
 {
-	// make KFForReloc List
+    // Make KFForReloc List
 	KFForReloc.clear();
 
     for(unsigned int k = 0; k < allKeyframesList.size(); k++)
 	{
-		// insert
+        // Insert
 		KFForReloc.push_back(allKeyframesList[k]);
 
-		// swap with a random element
+        // Swap with a random element
 		int ridx = rand()%(KFForReloc.size());
 
         Frame* tmp          = KFForReloc.back();
@@ -134,7 +138,7 @@ void Relocalizer::start(std::vector<Frame*, Eigen::aligned_allocator<lsd_slam::F
 	continueRunning = true;
     isRunning       = true;
 
-	// start threads
+    // Start threads
 	for(int i=0;i<RELOCALIZE_THREADS;i++)
 	{
 		relocThreads[i] = boost::thread(&Relocalizer::threadLoop, this, i);
@@ -183,7 +187,7 @@ void Relocalizer::threadLoop(int idx)
 	boost::unique_lock<boost::mutex> lock(exMutex);
 	while(continueRunning)
 	{
-		// if got something: do it (unlock in the meantime)
+        // If got something: do it (unlock in the meantime)
         if( nextRelocIDX < maxRelocIDX && CurrentRelocFrame )
 		{
             Frame* todo = KFForReloc[ nextRelocIDX%KFForReloc.size() ];
@@ -196,10 +200,10 @@ void Relocalizer::threadLoop(int idx)
 
 			lock.unlock();
 
-			// initial Alignment
+            // Initial Alignment
             SE3 todoToFrame = tracker->trackFrameOnPermaref( todo, myRelocFrame.get(), SE3() );
 
-			// try neighbours
+            // Try neighbours
 			float todoGoodVal = tracker->pointUsage * tracker->lastGoodCount / (tracker->lastGoodCount+tracker->lastBadCount);
             if( todoGoodVal > relocalizationTH )
 			{
@@ -243,7 +247,7 @@ void Relocalizer::threadLoop(int idx)
                                 numGoodNeighbours,
                                 numGoodNeighbours+numBadNeighbours  );
 
-					// set everything to stop!
+                    // Set everything to stop!
 					continueRunning = false;
 
 					lock.lock();

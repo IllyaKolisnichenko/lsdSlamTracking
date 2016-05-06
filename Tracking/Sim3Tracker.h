@@ -63,7 +63,7 @@ public:
 
 	int width, height;
 
-	// camera matrix
+    /// Camera matrix
 	Eigen::Matrix3f K, KInv;
 	float fx,fy,cx,cy;
 	float fxi,fyi,cxi,cyi;
@@ -72,8 +72,8 @@ public:
 
 	DenseDepthTrackerSettings settings;
 
-
-	// debug images
+    /** @name Debug images */
+    ///@{
 	cv::Mat debugImageResiduals;
 	cv::Mat debugImageWeights;
 	cv::Mat debugImageSecondFrame;
@@ -88,7 +88,7 @@ public:
 	cv::Mat debugImageWeightP;
 	cv::Mat debugImageWeightedResP;
 	cv::Mat debugImageWeightedResD;
-
+    ///@}
 
 	float* buf_warped_residual;
 	float* buf_warped_weights;
@@ -105,10 +105,12 @@ public:
 	float* buf_weight_p;
 	float* buf_weight_d;
 
-	// for debug only (second-pass)
+    /** @name For debug only (second-pass) */
+    ///@{
 	float* buf_weight_Huber;
 	float* buf_weight_VarP;
 	float* buf_weight_VarD;
+    ///@}
 
 	int buf_warped_size;
 
