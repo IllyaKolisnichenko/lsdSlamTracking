@@ -20,7 +20,7 @@
 
 #include "Relocalizer.h"
 #include "DataStructures/Frame.h"
-#include "Tracking/SE3Tracker.h"
+#include "SE3Tracker.h"
 
 //#include "IOWrapper/ImageDisplay.h"
 

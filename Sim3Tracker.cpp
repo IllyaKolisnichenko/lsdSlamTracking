@@ -20,13 +20,16 @@
 
 #include "Sim3Tracker.h"
 #include <opencv2/highgui/highgui.hpp>
+
 #include "DataStructures/Frame.h"
-#include "Tracking/TrackingReference.h"
+
+#include "LGSX.h"
+#include "TrackingReference.h"
 
 //#include "util/globalFuncs.h"
 #include "ImageDisplay.h"
 
-#include "Tracking/LGSX.h"
+
 
 namespace lsd_slam
 {

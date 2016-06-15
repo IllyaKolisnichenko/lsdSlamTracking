@@ -24,12 +24,11 @@
 
 #include "DataStructures/Frame.h"
 
-#include "Tracking/TrackingReference.h"
+#include "TrackingReference.h"
+#include "LGSX.h"
 
 #include "globalFuncs.h"
 #include "ImageDisplay.h"
-
-#include "Tracking/LGSX.h"
 
 #include <Eigen/Core>
 
