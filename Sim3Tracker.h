@@ -27,7 +27,7 @@
 #include "ImageDisplay.h"
 #include "globalFuncs.h"
 
-#include "Tracking/LGSX.h"
+#include "LGSX.h"
 
 namespace lsd_slam
 {

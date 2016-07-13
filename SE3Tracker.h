@@ -25,7 +25,7 @@
 #include "EigenCoreInclude.h"
 #include "SophusUtil.h"
 
-#include "Tracking/LGSX.h"
+#include "LGSX.h"
 
 namespace lsd_slam
 {
